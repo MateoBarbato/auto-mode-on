@@ -2,7 +2,10 @@
 
 ## Status
 
-Accepted for hackathon MVP.
+Accepted for hackathon MVP. **Partially superseded by [ADR 0010](./0010-programmatic-fastapi-pipeline.md):**
+the orchestration choice (n8n owning the pipeline) is replaced by a programmatic FastAPI
+backend, with n8n reduced to a scheduled trigger. Twilio, Supabase/Postgres, Next.js, and the
+LLM-with-strict-JSON decisions below still stand.
 
 ## Context
 

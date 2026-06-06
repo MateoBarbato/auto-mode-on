@@ -30,7 +30,7 @@ flowchart LR
 
 ## 1a. WhatsApp org resolution (canal + identidad)
 
-Before any task extraction, n8n resolves the org from the **Twilio `To` number** and
+Before any task extraction, the backend resolves the org from the **Twilio `To` number** and
 validates the **sender `From`** exists in `people` for that org. See
 [`../../prompts/whatsapp-org-resolution.md`](../../prompts/whatsapp-org-resolution.md).
 
@@ -39,21 +39,21 @@ sequenceDiagram
   autonumber
   participant User
   participant WhatsApp as Twilio (org-specific number)
-  participant n8n
+  participant API as FastAPI backend
   participant DB as Supabase
 
   User->>WhatsApp: message to Fundación Esperanza line
-  WhatsApp->>n8n: webhook From, To, Body
-  n8n->>DB: organization_channels WHERE whatsapp_number = To
-  DB-->>n8n: organization_id, channel_id
-  n8n->>DB: people WHERE org + From
+  WhatsApp->>API: webhook From, To, Body
+  API->>DB: organization_channels WHERE whatsapp_number = To
+  DB-->>API: organization_id, channel_id
+  API->>DB: people WHERE org + From
   alt Known in this org
-    DB-->>n8n: people row
-    n8n->>DB: upsert whatsapp_sessions → active
-    Note over n8n: continue to task extraction (§1 / §1b)
+    DB-->>API: people row
+    API->>DB: upsert whatsapp_sessions → active
+    Note over API: continue to task extraction (§1 / §1b)
   else Not in this org
-    n8n->>DB: lookup other orgs for same From
-    n8n->>WhatsApp: redirect menu or welcome / request access
+    API->>DB: lookup other orgs for same From
+    API->>WhatsApp: redirect menu or welcome / request access
     WhatsApp-->>User: menu (0, 1, G… or org list)
   end
 ```
@@ -70,20 +70,20 @@ sequenceDiagram
   autonumber
   participant User
   participant WhatsApp as Twilio WhatsApp
-  participant n8n
+  participant API as FastAPI backend
   participant LLM
   participant DB as Supabase
   participant Dashboard
 
   User->>WhatsApp: "Yo hago el informe para el viernes"
-  WhatsApp->>n8n: POST webhook (From, ProfileName, Body)
-  n8n->>DB: insert inbound_messages (raw payload)
-  DB-->>n8n: message id
-  n8n->>LLM: task-extraction prompt (message, sender, current_date)
-  LLM-->>n8n: strict JSON {owner, task, due_date, priority, confidence}
-  Note over n8n: validate JSON shape before insert
-  n8n->>DB: insert tasks (linked to source_message_id)
-  n8n->>WhatsApp: "Registré: Informe — viernes. ¿Confirmás?"
+  WhatsApp->>API: POST webhook (From, ProfileName, Body)
+  API->>DB: insert inbound_messages (raw payload)
+  DB-->>API: message id
+  API->>LLM: task-extraction prompt (message, sender, current_date)
+  LLM-->>API: strict JSON {owner, task, due_date, priority, confidence}
+  Note over API: validate JSON shape before insert
+  API->>DB: insert tasks (linked to source_message_id)
+  API->>WhatsApp: "Registré: Informe — viernes. ¿Confirmás?"
   WhatsApp-->>User: confirmation
   Dashboard->>DB: query task state
   DB-->>Dashboard: open / overdue / load by owner
@@ -102,30 +102,30 @@ sequenceDiagram
   autonumber
   participant User
   participant WhatsApp as Twilio WhatsApp
-  participant n8n
+  participant API as FastAPI backend
   participant LLM
   participant DB as Supabase
 
   User->>WhatsApp: "Mañana coordino el espacio del taller"
-  WhatsApp->>n8n: POST webhook
-  n8n->>DB: insert inbound_messages
-  n8n->>DB: fetch active_projects (planning, active)
-  DB-->>n8n: project list
-  n8n->>LLM: task-extraction (message + active_projects)
-  LLM-->>n8n: JSON project_resolution.status = needs_clarification
-  n8n->>DB: insert task_drafts (extraction_payload, offered_projects)
-  n8n->>WhatsApp: "Registré: … ¿Individual (0) o proyecto? 1—… 2—…"
+  WhatsApp->>API: POST webhook
+  API->>DB: insert inbound_messages
+  API->>DB: fetch active_projects (planning, active)
+  DB-->>API: project list
+  API->>LLM: task-extraction (message + active_projects)
+  LLM-->>API: JSON project_resolution.status = needs_clarification
+  API->>DB: insert task_drafts (extraction_payload, offered_projects)
+  API->>WhatsApp: "Registré: … ¿Individual (0) o proyecto? 1—… 2—…"
   WhatsApp-->>User: disambiguation prompt
 
   User->>WhatsApp: "2"
-  WhatsApp->>n8n: POST webhook (reply)
-  n8n->>DB: fetch task_drafts by sender_phone (pending)
-  DB-->>n8n: draft
-  n8n->>LLM: project-assignment-reply (reply + draft + offered_projects)
-  LLM-->>n8n: JSON project_id confirmed
-  n8n->>DB: insert tasks (project_id or null)
-  n8n->>DB: update task_drafts → confirmed, resolved_task_id
-  n8n->>WhatsApp: "Listo: … dentro de Taller nutrición. ¿Algo más?"
+  WhatsApp->>API: POST webhook (reply)
+  API->>DB: fetch task_drafts by sender_phone (pending)
+  DB-->>API: draft
+  API->>LLM: project-assignment-reply (reply + draft + offered_projects)
+  LLM-->>API: JSON project_id confirmed
+  API->>DB: insert tasks (project_id or null)
+  API->>DB: update task_drafts → confirmed, resolved_task_id
+  API->>WhatsApp: "Listo: … dentro de Taller nutrición. ¿Algo más?"
   WhatsApp-->>User: confirmation
 ```
 
@@ -147,41 +147,49 @@ sequenceDiagram
   autonumber
   participant User
   participant Dashboard
+  participant API as FastAPI backend
   participant LLM
   participant DB as Supabase
 
   User->>Dashboard: paste / upload transcript
-  Dashboard->>LLM: meeting-summary prompt (transcript, current_date)
-  LLM-->>Dashboard: strict JSON {summary, tasks[], ambiguities[]}
-  Dashboard->>DB: insert meeting (transcript + summary)
-  Dashboard->>DB: insert tasks (source_type = 'meeting')
-  Dashboard->>DB: insert meeting_tasks (link)
-  Note over Dashboard,DB: optional: notify each assignee on WhatsApp
+  Dashboard->>API: POST /meetings { transcript }
+  API->>LLM: meeting-summary prompt (transcript, current_date)
+  LLM-->>API: strict JSON {summary, tasks[], ambiguities[]}
+  API->>DB: insert meeting (transcript + summary)
+  API->>DB: insert tasks (source_type = 'meeting')
+  API->>DB: insert meeting_tasks (link)
+  API-->>Dashboard: { summary, tasks[] }
+  Note over API,DB: optional: notify each assignee on WhatsApp
 ```
 
 ---
 
 ## 3. Reminder + status update
 
+The **n8n scheduled trigger** is the only thing n8n still does: it fires a cron and calls the
+backend's authenticated `/reminders/run` endpoint. All logic — fetch, dedup, send, classify —
+lives in the backend. Status replies arrive as ordinary inbound webhooks.
+
 ```mermaid
 sequenceDiagram
   autonumber
-  participant Scheduler as n8n Scheduler
-  participant n8n
+  participant N8N as n8n (cron)
+  participant API as FastAPI backend
   participant DB as Supabase
+  participant LLM
   participant WhatsApp as Twilio WhatsApp
   participant User
 
-  Scheduler->>n8n: scheduled trigger (every 6h)
-  n8n->>DB: fetch tasks where due_date <= today<br/>and status in (pending, in_progress, blocked)
-  DB-->>n8n: due tasks
-  Note over n8n: skip tasks already reminded<br/>(reminders.sent_at) — planned dedup
-  n8n->>WhatsApp: "Hace unos días quedó pendiente: X. ¿Cómo va?"
-  n8n->>DB: insert reminders (scheduled_at, sent_at) — planned
+  N8N->>API: POST /reminders/run (every 6h, shared secret)
+  API->>DB: fetch tasks where due_date <= today<br/>and status in (pending, in_progress, blocked)
+  DB-->>API: due tasks
+  Note over API: skip tasks already reminded<br/>(reminders.sent_at) — dedup
+  API->>WhatsApp: "Hace unos días quedó pendiente: X. ¿Cómo va?"
+  API->>DB: insert reminders (scheduled_at, sent_at)
   User->>WhatsApp: "done" / "in_progress" / "blocked"
-  WhatsApp->>n8n: POST webhook (reply)
-  n8n->>LLM: classify reply intent (status_update)
-  n8n->>DB: update task status + reminders.response
+  WhatsApp->>API: POST webhook (reply)
+  API->>LLM: classify reply intent (status_update)
+  API->>DB: update task status + reminders.response
 ```
 
 ### Quick-reply mapping

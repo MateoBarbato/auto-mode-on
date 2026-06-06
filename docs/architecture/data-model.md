@@ -231,7 +231,7 @@ Optional defaults on `organization_memberships`:
 `tasks` and `meetings` carry optional `team_id` + `category_id` for dashboard filtering.
 A trigger (`assert_org_scoped_fk`) rejects FKs that belong to a different organization.
 
-When n8n creates a task from WhatsApp and the owner is a known `people` row, the app
+When the backend creates a task from WhatsApp and the owner is a known `people` row, it
 can copy team/category from `people_teams` / `people_categories` (first match or primary).
 
 ---
@@ -356,7 +356,7 @@ WHERE t.organization_id = :org_id
   )
 ```
 
-**WhatsApp / n8n:** la captura habitual crea tareas **sin** `project_id` salvo que el mensaje
+**WhatsApp / backend:** la captura habitual crea tareas **sin** `project_id` salvo que el mensaje
 mencione un proyecto existente o el flujo lo asigne explícitamente. No se exige proyecto
 al insertar.
 
@@ -364,7 +364,7 @@ al insertar.
 
 Flujo en [`../../prompts/task-extraction.md`](../../prompts/task-extraction.md):
 
-1. n8n carga `active_projects` de la org y los pasa al LLM junto con el mensaje.
+1. el backend carga `active_projects` de la org y los pasa al LLM junto con el mensaje.
 2. El LLM devuelve `is_global` y `project_resolution.status`:
    - `is_global: true` → insertar con `is_global = true` (sin proyecto)
    - `matched` → insertar tarea con `project_id`
@@ -411,7 +411,7 @@ no actúa — la tarea queda standalone.
 ### Creación restringida por jerarquía
 
 La autorización vive en `organization_settings.role_permissions` (no en el DDL).
-El dashboard y n8n deben validar **antes** de insertar:
+El dashboard y el backend deben validar **antes** de insertar:
 
 | Rol | `can_create_projects` | Dashboard | WhatsApp bot | `can_manage_projects` |
 |---|---|---|---|---|
@@ -423,12 +423,12 @@ El dashboard y n8n deben validar **antes** de insertar:
 Flags por rol:
 - `can_create_projects` — puede crear proyectos por algún canal.
 - `can_create_projects_via_dashboard` — UI de proyectos.
-- `can_create_projects_via_whatsapp` — bot (n8n resuelve `people` → `user_id` → membership → rol).
+- `can_create_projects_via_whatsapp` — bot (el backend resuelve `people` → `user_id` → membership → rol).
 - `can_manage_projects` — editar, archivar, reasignar (owner/admin).
 
 Override opcional: `organization_memberships.can_create_projects_override` (boolean).
 
-**Flujo WhatsApp (n8n):**
+**Flujo WhatsApp (backend):**
 1. Resolver `people` por `sender_phone` + `organization_id`.
 2. Si tiene `user_id`, cargar membership y `role_permissions`.
 3. Si `can_create_projects_via_whatsapp` es false → responder sin crear; sugerir contactar coordinación.

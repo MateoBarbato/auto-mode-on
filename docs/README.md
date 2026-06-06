@@ -22,6 +22,7 @@ flowchart TD
     A2["data-model.md"]
     A3["diagrams/flows.md"]
     A4["decisions/0001-mvp-stack.md"]
+    A5["decisions/0010-programmatic-fastapi-pipeline.md"]
   end
 ```
 
@@ -45,13 +46,14 @@ flowchart TD
 - [`team/timeline-and-checkpoints.md`](team/timeline-and-checkpoints.md) — hour-by-hour plan, Definition of Done, smoke checklist, demo runbook, cut list.
 
 ### Decisions
-- [`decisions/0001-mvp-stack.md`](decisions/0001-mvp-stack.md) — ADR: why Twilio + n8n + Supabase + Next.js.
+- [`decisions/0001-mvp-stack.md`](decisions/0001-mvp-stack.md) — ADR: why Twilio + Supabase + Next.js (orchestration superseded by 0010).
 - [`decisions/0002-multi-organization-schema.md`](decisions/0002-multi-organization-schema.md) — ADR: multi-org, roles, settings, invitations.
 - [`decisions/0003-teams-and-categories.md`](decisions/0003-teams-and-categories.md) — ADR: teams, categories, dashboard filters.
 - [`decisions/0004-projects-and-hierarchy.md`](decisions/0004-projects-and-hierarchy.md) — ADR: projects, role-gated creation.
 - [`decisions/0005-llm-project-disambiguation.md`](decisions/0005-llm-project-disambiguation.md) — ADR: LLM project vs standalone + user prompt.
 - [`decisions/0006-global-organization-tasks.md`](decisions/0006-global-organization-tasks.md) — ADR: org-wide global tasks.
 - [`decisions/0007-whatsapp-org-resolution.md`](decisions/0007-whatsapp-org-resolution.md) — ADR: Twilio number per org + people validation.
+- [`decisions/0010-programmatic-fastapi-pipeline.md`](decisions/0010-programmatic-fastapi-pipeline.md) — ADR: programmatic FastAPI pipeline; n8n reduced to a scheduler.
 
 ### Reference
 - [`reference/`](reference/) — source PDF (base architecture & product definition).
@@ -59,8 +61,9 @@ flowchart TD
 ## Related artifacts (outside `docs/`)
 - [`../database/schema.sql`](../database/schema.sql) · [`../database/seeds.sql`](../database/seeds.sql) — Postgres schema & demo data.
 - [`../prompts/task-extraction.md`](../prompts/task-extraction.md) · [`../prompts/project-assignment-reply.md`](../prompts/project-assignment-reply.md) · [`../prompts/whatsapp-org-resolution.md`](../prompts/whatsapp-org-resolution.md) — extraction, project disambiguation, org resolution.
-- [`../apps/n8n-workflows/`](../apps/n8n-workflows/) — importable workflow definitions.
+- [`../apps/api/`](../apps/api/) — FastAPI backend (the whole pipeline). *(n8n is now just a scheduled trigger.)*
 - [`../apps/dashboard-web/`](../apps/dashboard-web/) — Next.js leadership dashboard.
+- [`../src/`](../src/) — ⚠️ TS prototype, reference-only; removed after the FastAPI port.
 
 ## Current status at a glance
 
@@ -69,7 +72,8 @@ flowchart TD
 | DB schema + seeds | ✅ Complete |
 | Prompt templates | ✅ Complete |
 | Dashboard UI (mock data) | ✅ Complete |
-| n8n task-capture / reminders | 🟡 Scaffolded (stubs) |
+| TS prototype (`src/`) | 🟡 Reference (webhook→extract→reply, no DB) |
+| FastAPI backend (capture / reminders / meetings) | 🔴 Not started |
 | Live Supabase reads / meeting flow | 🔴 Not started |
 
 Full breakdown in [`architecture/overview.md` §8](architecture/overview.md#8-implementation-status-target-vs-today).
