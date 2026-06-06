@@ -3,30 +3,30 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
-import { LayoutDashboard, Users, FolderKanban, Building2, ListTodo, Inbox } from "lucide-react"
+import { initials } from "@/lib/ui-helpers"
+import { Building2 } from "lucide-react"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { NavIcon } from "@/components/nav-icon"
+import type { NavItem, NavChild } from "@/lib/nav"
 
-type NavChild = { href: string; label: string; icon: typeof FolderKanban }
-type NavItem = { href: string; label: string; icon: typeof FolderKanban; children?: NavChild[] }
-
-const nav: NavItem[] = [
-  { href: "/", label: "Resumen", icon: LayoutDashboard },
-  { href: "/people", label: "Personas", icon: Users },
-  {
-    href: "/tasks",
-    label: "Tareas",
-    icon: ListTodo,
-    children: [
-      { href: "/tasks/projects", label: "Proyectos", icon: FolderKanban },
-      { href: "/tasks/general", label: "Generales", icon: Inbox },
-    ],
-  },
-]
+export type SidebarUser = {
+  displayName: string
+  title: string | null
+  orgName: string
+  isDemo: boolean
+}
 
 function isActive(pathname: string, href: string) {
   return href === "/" ? pathname === "/" : pathname.startsWith(href)
 }
 
-export function Sidebar() {
+export function Sidebar({
+  user,
+  navItems,
+}: {
+  user: SidebarUser
+  navItems: NavItem[]
+}) {
   const pathname = usePathname()
 
   return (
@@ -35,8 +35,8 @@ export function Sidebar() {
         <div className="flex h-8 w-8 items-center justify-center rounded-md bg-sidebar-primary text-sidebar-primary-foreground">
           <Building2 className="h-4.5 w-4.5" />
         </div>
-        <div className="leading-tight">
-          <p className="text-sm font-semibold">Halketon</p>
+        <div className="leading-tight min-w-0">
+          <p className="text-sm font-semibold truncate">{user.orgName}</p>
           <p className="text-xs text-sidebar-foreground/60">Operations</p>
         </div>
       </div>
@@ -46,9 +46,8 @@ export function Sidebar() {
           Espacio de trabajo
         </p>
         <ul className="flex flex-col gap-1">
-          {nav.map((item) => {
+          {navItems.map((item) => {
             const active = isActive(pathname, item.href)
-            const Icon = item.icon
             return (
               <li key={item.href}>
                 <Link
@@ -60,7 +59,7 @@ export function Sidebar() {
                       : "text-sidebar-foreground/70 hover:bg-sidebar-accent/60 hover:text-sidebar-foreground",
                   )}
                 >
-                  <Icon className="h-4 w-4" />
+                  <NavIcon name={item.icon} className="h-4 w-4" />
                   {item.label}
                 </Link>
 
@@ -68,7 +67,6 @@ export function Sidebar() {
                   <ul className="mt-1 flex flex-col gap-1 pl-7">
                     {item.children.map((child) => {
                       const childActive = pathname.startsWith(child.href)
-                      const ChildIcon = child.icon
                       return (
                         <li key={child.href}>
                           <Link
@@ -80,7 +78,7 @@ export function Sidebar() {
                                 : "text-sidebar-foreground/60 hover:bg-sidebar-accent/40 hover:text-sidebar-foreground",
                             )}
                           >
-                            <ChildIcon className="h-3.5 w-3.5" />
+                            <NavIcon name={child.icon} className="h-3.5 w-3.5" />
                             {child.label}
                           </Link>
                         </li>
@@ -94,35 +92,36 @@ export function Sidebar() {
         </ul>
       </nav>
 
-      <div className="border-t border-sidebar-border p-3">
+      <div className="border-t border-sidebar-border p-3 space-y-2">
         <div className="flex items-center gap-3 rounded-md px-2 py-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-sidebar-accent text-xs font-medium">
-            ER
-          </div>
-          <div className="leading-tight">
-            <p className="text-sm font-medium">Elena Ruiz</p>
-            <p className="text-xs text-sidebar-foreground/55">Directora Ejecutiva</p>
+          <Avatar className="h-8 w-8">
+            <AvatarFallback className="text-xs">{initials(user.displayName)}</AvatarFallback>
+          </Avatar>
+          <div className="leading-tight min-w-0">
+            <p className="text-sm font-medium truncate">{user.displayName}</p>
+            <p className="text-xs text-sidebar-foreground/55 truncate">
+              {user.title ?? (user.isDemo ? "Sesión demo" : "Miembro")}
+            </p>
           </div>
         </div>
+        <Link
+          href="/login"
+          className="block px-2 text-xs text-sidebar-foreground/55 hover:text-sidebar-foreground"
+        >
+          {user.isDemo ? "Iniciar sesión" : "Cuenta / cerrar sesión"}
+        </Link>
       </div>
     </aside>
   )
 }
 
-export function MobileNav() {
+export function MobileNav({ navItems }: { navItems: NavChild[] }) {
   const pathname = usePathname()
-  // Flatten parent + children for the horizontal mobile bar.
-  const items: NavChild[] = [
-    { href: "/", label: "Resumen", icon: LayoutDashboard },
-    { href: "/people", label: "Personas", icon: Users },
-    { href: "/tasks/projects", label: "Proyectos", icon: FolderKanban },
-    { href: "/tasks/general", label: "Generales", icon: Inbox },
-  ]
+
   return (
     <nav className="md:hidden sticky top-0 z-20 flex items-center gap-1 overflow-x-auto border-b border-border bg-sidebar px-3 py-2 text-sidebar-foreground">
-      {items.map((item) => {
+      {navItems.map((item) => {
         const active = isActive(pathname, item.href)
-        const Icon = item.icon
         return (
           <Link
             key={item.href}
@@ -132,7 +131,7 @@ export function MobileNav() {
               active ? "bg-sidebar-accent text-sidebar-accent-foreground" : "text-sidebar-foreground/70",
             )}
           >
-            <Icon className="h-4 w-4" />
+            <NavIcon name={item.icon} className="h-4 w-4" />
             {item.label}
           </Link>
         )

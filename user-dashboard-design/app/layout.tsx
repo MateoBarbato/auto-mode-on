@@ -1,36 +1,26 @@
-import { Analytics } from '@vercel/analytics/next'
-import type { Metadata } from 'next'
-import { Geist, Geist_Mono } from 'next/font/google'
-import { Sidebar, MobileNav } from '@/components/sidebar'
-import './globals.css'
+import { Analytics } from "@vercel/analytics/next"
+import type { Metadata } from "next"
+import { Geist, Geist_Mono } from "next/font/google"
+import "./globals.css"
 
-const geistSans = Geist({ variable: '--font-geist-sans', subsets: ['latin'] })
+const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] })
 const geistMono = Geist_Mono({
-  variable: '--font-geist-mono',
-  subsets: ['latin'],
+  variable: "--font-geist-mono",
+  subsets: ["latin"],
 })
 
 export const metadata: Metadata = {
-  title: 'Panel de Operaciones Halketon',
+  title: "Panel de Operaciones Halketon",
   description:
-    'Panel de operaciones centrado en la organización para dar seguimiento a equipos, proyectos y tareas de una ONG.',
-  generator: 'v0.app',
+    "Panel de operaciones centrado en la organización para dar seguimiento a equipos, proyectos y tareas de una ONG.",
+  generator: "v0.app",
   icons: {
     icon: [
-      {
-        url: '/icon-light-32x32.png',
-        media: '(prefers-color-scheme: light)',
-      },
-      {
-        url: '/icon-dark-32x32.png',
-        media: '(prefers-color-scheme: dark)',
-      },
-      {
-        url: '/icon.svg',
-        type: 'image/svg+xml',
-      },
+      { url: "/icon-light-32x32.png", media: "(prefers-color-scheme: light)" },
+      { url: "/icon-dark-32x32.png", media: "(prefers-color-scheme: dark)" },
+      { url: "/icon.svg", type: "image/svg+xml" },
     ],
-    apple: '/apple-icon.png',
+    apple: "/apple-icon.png",
   },
 }
 
@@ -42,14 +32,8 @@ export default function RootLayout({
   return (
     <html lang="es" className={`${geistSans.variable} ${geistMono.variable} bg-background`}>
       <body className="font-sans antialiased">
-        <div className="flex min-h-screen">
-          <Sidebar />
-          <div className="flex flex-1 flex-col min-w-0">
-            <MobileNav />
-            <main className="flex-1">{children}</main>
-          </div>
-        </div>
-        {process.env.NODE_ENV === 'production' && <Analytics />}
+        {children}
+        {process.env.NODE_ENV === "production" && <Analytics />}
       </body>
     </html>
   )

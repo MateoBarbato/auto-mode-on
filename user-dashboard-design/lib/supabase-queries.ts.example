@@ -1,16 +1,6 @@
 // ---------------------------------------------------------------------------
-// EXAMPLE: How to wire the dashboard to live Supabase data.
-//
-// This file is intentionally NOT imported anywhere. It documents the queries
-// that lib/data.ts should run when DATA_SOURCE=supabase.
-//
-// To enable:
-//   1. Add the Supabase integration (sets NEXT_PUBLIC_SUPABASE_URL + keys).
-//   2. Run the provided schema in your Supabase project.
-//   3. Install @supabase/supabase-js and @supabase/ssr.
-//   4. Rename this file to lib/supabase-queries.ts and import it from data.ts,
-//      replacing the `throw` branches guarded by USE_SUPABASE.
-//   5. Set DATA_SOURCE=supabase in your environment variables.
+// REFERENCE: Supabase wiring is implemented in lib/supabase-queries.ts.
+// See .env.local.example for required environment variables.
 // ---------------------------------------------------------------------------
 
 /*

@@ -7,10 +7,12 @@ export function TaskList({
   pendingTasks,
   completedTasks,
   showProject = false,
+  showScope = false,
 }: {
   pendingTasks: TaskWithRefs[]
   completedTasks: TaskWithRefs[]
   showProject?: boolean
+  showScope?: boolean
 }) {
   return (
     <Tabs defaultValue="pending">
@@ -28,8 +30,9 @@ export function TaskList({
               <TaskItem
                 key={task.id}
                 task={task}
-                owner={{ name: task.ownerName, avatar: task.ownerAvatar }}
+                owner={{ name: task.ownerName }}
                 projectName={showProject ? task.projectName : undefined}
+                showScope={showScope}
               />
             ))}
           </div>
@@ -45,8 +48,9 @@ export function TaskList({
               <TaskItem
                 key={task.id}
                 task={task}
-                owner={{ name: task.ownerName, avatar: task.ownerAvatar }}
+                owner={{ name: task.ownerName }}
                 projectName={showProject ? task.projectName : undefined}
+                showScope={showScope}
               />
             ))}
           </div>

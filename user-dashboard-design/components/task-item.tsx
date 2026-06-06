@@ -1,7 +1,6 @@
 import { Badge } from "@/components/ui/badge"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { cn } from "@/lib/utils"
-import { statusMeta, priorityMeta, relativeDue, formatDate, initials } from "@/lib/ui-helpers"
+import { statusMeta, priorityMeta, relativeDue, formatDate } from "@/lib/ui-helpers"
 import type { Task } from "@/lib/types"
 import { CheckCircle2, Circle, FolderKanban } from "lucide-react"
 
@@ -10,14 +9,23 @@ export function TaskItem({
   meta,
   owner,
   projectName,
+  showScope = false,
 }: {
   task: Task
   meta?: string
-  owner?: { name: string | null; avatar: string | null } | null
+  owner?: { name: string | null } | null
   projectName?: string | null
+  showScope?: boolean
 }) {
   const isDone = task.status === "done"
   const due = relativeDue(task.due_date)
+  const scopeLabel = showScope && !projectName
+    ? task.is_global
+      ? "Global"
+      : task.project_id
+        ? null
+        : "Suelta"
+    : null
 
   return (
     <div className="flex items-start gap-3 rounded-lg border border-border bg-card px-3.5 py-3 transition-colors hover:border-primary/40">
@@ -59,6 +67,10 @@ export function TaskItem({
               <FolderKanban className="h-3 w-3" />
               {projectName}
             </span>
+          ) : scopeLabel ? (
+            <Badge variant="outline" className="border-transparent text-xs text-muted-foreground">
+              {scopeLabel}
+            </Badge>
           ) : null}
           {meta ? <span className="text-xs text-muted-foreground">{meta}</span> : null}
           {isDone ? (
@@ -72,15 +84,9 @@ export function TaskItem({
       </div>
 
       {owner !== undefined ? (
-        <div className="ml-1 flex shrink-0 items-center gap-2">
+        <div className="ml-1 shrink-0 text-right">
           {owner ? (
-            <>
-              <span className="hidden text-xs text-muted-foreground sm:inline">{owner.name ?? "Sin asignar"}</span>
-              <Avatar className="h-7 w-7">
-                {owner.avatar ? <AvatarImage src={owner.avatar} alt={owner.name ?? ""} /> : null}
-                <AvatarFallback className="text-[10px]">{initials(owner.name ?? "?")}</AvatarFallback>
-              </Avatar>
-            </>
+            <span className="text-xs text-muted-foreground">{owner.name ?? "Sin asignar"}</span>
           ) : (
             <span className="text-xs italic text-muted-foreground">Sin asignar</span>
           )}

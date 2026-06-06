@@ -1,4 +1,4 @@
-import { REFERENCE_DATE } from "@/lib/ui-helpers"
+import { referenceNow } from "@/lib/data-source"
 
 // Presets de rango de fechas para el filtro del resumen.
 export type RangePreset =
@@ -24,11 +24,6 @@ export interface DateRange {
   from: Date
   to: Date
 }
-
-// "Hoy" se ancla a la fecha de referencia del dataset de ejemplo para que los
-// rangos den resultados consistentes en la demo. Al conectar Supabase, cambiar
-// por `new Date()`.
-const TODAY = REFERENCE_DATE
 
 function startOfDay(d: Date): Date {
   const x = new Date(d)
@@ -63,7 +58,8 @@ function parseDate(value?: string): Date | null {
 
 // Devuelve el rango de fechas para un preset, o null si es "todo el tiempo".
 export function resolveRange(preset: RangePreset, from?: string, to?: string): DateRange | null {
-  const weekStart = startOfWeek(TODAY)
+  const today = referenceNow()
+  const weekStart = startOfWeek(today)
 
   switch (preset) {
     case "esta_semana":
@@ -73,9 +69,9 @@ export function resolveRange(preset: RangePreset, from?: string, to?: string): D
     case "semana_pasada":
       return { from: addDays(weekStart, -7), to: endOfDay(addDays(weekStart, -1)) }
     case "ultimo_mes":
-      return { from: startOfDay(addDays(TODAY, -30)), to: endOfDay(TODAY) }
+      return { from: startOfDay(addDays(today, -30)), to: endOfDay(today) }
     case "ultimos_3_meses":
-      return { from: startOfDay(addDays(TODAY, -90)), to: endOfDay(TODAY) }
+      return { from: startOfDay(addDays(today, -90)), to: endOfDay(today) }
     case "personalizado": {
       const f = parseDate(from)
       const t = parseDate(to)

@@ -6,6 +6,9 @@ import type {
   Membership,
   Project,
   Task,
+  Meeting,
+  Reminder,
+  InboundMessage,
 } from "@/lib/types"
 
 // ---------------------------------------------------------------------------
@@ -46,22 +49,30 @@ export const categories: Category[] = [
 ]
 
 export const users: User[] = [
-  { id: "user_elena", email: "elena.ruiz@halketon.org", display_name: "Elena Ruiz", phone: "+57 300 111 2233", avatar_url: "/avatars/elena.png", created_at: "2023-02-11T09:00:00Z" },
-  { id: "user_marco", email: "marco.silva@halketon.org", display_name: "Marco Silva", phone: "+57 300 222 3344", avatar_url: "/avatars/marco.png", created_at: "2023-03-02T09:00:00Z" },
-  { id: "user_sofia", email: "sofia.mendez@halketon.org", display_name: "Sofía Méndez", phone: "+57 300 333 4455", avatar_url: "/avatars/sofia.png", created_at: "2023-05-20T09:00:00Z" },
-  { id: "user_diego", email: "diego.torres@halketon.org", display_name: "Diego Torres", phone: "+57 300 444 5566", avatar_url: "/avatars/diego.png", created_at: "2023-06-15T09:00:00Z" },
-  { id: "user_amara", email: "amara.okafor@halketon.org", display_name: "Amara Okafor", phone: "+57 300 555 6677", avatar_url: "/avatars/amara.png", created_at: "2024-01-08T09:00:00Z" },
-  { id: "user_luis", email: "luis.ramirez@halketon.org", display_name: "Luis Ramírez", phone: "+57 300 666 7788", avatar_url: "/avatars/luis.png", created_at: "2024-04-22T09:00:00Z" },
+  { id: "user_elena", email: "elena.ruiz@halketon.org", display_name: "Elena Ruiz", phone: "+57 300 111 2233", created_at: "2023-02-11T09:00:00Z" },
+  { id: "user_marco", email: "marco.silva@halketon.org", display_name: "Marco Silva", phone: "+57 300 222 3344", created_at: "2023-03-02T09:00:00Z" },
+  { id: "user_sofia", email: "sofia.mendez@halketon.org", display_name: "Sofía Méndez", phone: "+57 300 333 4455", created_at: "2023-05-20T09:00:00Z" },
+  { id: "user_diego", email: "diego.torres@halketon.org", display_name: "Diego Torres", phone: "+57 300 444 5566", created_at: "2023-06-15T09:00:00Z" },
+  { id: "user_amara", email: "amara.okafor@halketon.org", display_name: "Amara Okafor", phone: "+57 300 555 6677", created_at: "2024-01-08T09:00:00Z" },
+  { id: "user_luis", email: "luis.ramirez@halketon.org", display_name: "Luis Ramírez", phone: "+57 300 666 7788", created_at: "2024-04-22T09:00:00Z" },
 ]
 
 export const memberships: Membership[] = [
-  { id: "mem_elena", organization_id: "org_1", user_id: "user_elena", role: "owner", status: "active", title: "Directora Ejecutiva", team_ids: ["team_grants", "team_field"], category_ids: ["cat_education", "cat_health"], joined_at: "2023-02-11T09:00:00Z" },
-  { id: "mem_marco", organization_id: "org_1", user_id: "user_marco", role: "manager", status: "active", title: "Líder de Operaciones de Campo", team_ids: ["team_field"], category_ids: ["cat_nutrition", "cat_logistics"], joined_at: "2023-03-02T09:00:00Z" },
-  { id: "mem_sofia", organization_id: "org_1", user_id: "user_sofia", role: "member", status: "active", title: "Coordinadora Comunitaria", team_ids: ["team_outreach"], category_ids: ["cat_education"], joined_at: "2023-05-20T09:00:00Z" },
-  { id: "mem_diego", organization_id: "org_1", user_id: "user_diego", role: "admin", status: "active", title: "Gerente de Subvenciones", team_ids: ["team_grants"], category_ids: ["cat_health"], joined_at: "2023-06-15T09:00:00Z" },
-  { id: "mem_amara", organization_id: "org_1", user_id: "user_amara", role: "manager", status: "active", title: "Líder del Programa de Salud", team_ids: ["team_health"], category_ids: ["cat_health", "cat_nutrition"], joined_at: "2024-01-08T09:00:00Z" },
-  { id: "mem_luis", organization_id: "org_1", user_id: "user_luis", role: "member", status: "active", title: "Encargado de Logística", team_ids: ["team_field", "team_outreach"], category_ids: ["cat_logistics"], joined_at: "2024-04-22T09:00:00Z" },
+  { id: "mem_elena", organization_id: "org_1", user_id: "user_elena", role: "owner", status: "active", title: "Directora Ejecutiva", team_ids: ["team_grants", "team_field"], category_ids: ["cat_education", "cat_health"], joined_at: "2023-02-11T09:00:00Z", tasks_scope_override: null },
+  { id: "mem_marco", organization_id: "org_1", user_id: "user_marco", role: "manager", status: "active", title: "Líder de Operaciones de Campo", team_ids: ["team_field"], category_ids: ["cat_nutrition", "cat_logistics"], joined_at: "2023-03-02T09:00:00Z", tasks_scope_override: null },
+  { id: "mem_sofia", organization_id: "org_1", user_id: "user_sofia", role: "member", status: "active", title: "Coordinadora Comunitaria", team_ids: ["team_outreach"], category_ids: ["cat_education"], joined_at: "2023-05-20T09:00:00Z", tasks_scope_override: null },
+  { id: "mem_diego", organization_id: "org_1", user_id: "user_diego", role: "admin", status: "active", title: "Gerente de Subvenciones", team_ids: ["team_grants"], category_ids: ["cat_health"], joined_at: "2023-06-15T09:00:00Z", tasks_scope_override: null },
+  { id: "mem_amara", organization_id: "org_1", user_id: "user_amara", role: "manager", status: "active", title: "Líder del Programa de Salud", team_ids: ["team_health"], category_ids: ["cat_health", "cat_nutrition"], joined_at: "2024-01-08T09:00:00Z", tasks_scope_override: null },
+  { id: "mem_luis", organization_id: "org_1", user_id: "user_luis", role: "member", status: "active", title: "Encargado de Logística", team_ids: ["team_field", "team_outreach"], category_ids: ["cat_logistics"], joined_at: "2024-04-22T09:00:00Z", tasks_scope_override: null },
 ]
+
+export const people = users.map((u) => ({
+  id: `person_${u.id}`,
+  organization_id: organization.id,
+  display_name: u.display_name,
+  user_id: u.id,
+  role_label: memberships.find((m) => m.user_id === u.id)?.title ?? null,
+}))
 
 export const projects: Project[] = [
   { id: "proj_school_meals", organization_id: "org_1", team_id: "team_health", name: "Programa de Comedores Escolares", slug: "comedores-escolares", description: "Nutrición diaria para 12 escuelas rurales.", status: "active", start_date: "2026-01-15", end_date: "2026-12-15", category_ids: ["cat_nutrition", "cat_education"], created_at: "2026-01-10T09:00:00Z" },
@@ -95,12 +106,16 @@ function task(p: {
     is_global: p.global ?? false,
     team_id: p.team ?? null,
     category_id: p.category ?? null,
-    owner_id: p.owner,
+    owner_people_id: null,
+    owner_user_id: p.owner,
+    owner_name: null,
     task_title: p.title,
     description: p.desc ?? null,
     due_date: p.due === null ? null : dateOffset(p.due),
     status: p.status,
     priority: p.priority ?? "normal",
+    source_type: "manual",
+    confidence: null,
     created_at: dayOffset(p.due === null ? -20 : p.due - 14),
     completed_at: p.completed != null ? dayOffset(p.completed) : null,
   }
@@ -156,4 +171,71 @@ export const tasks: Task[] = [
   // Tareas globales / sin asignar de la organización
   task({ title: "Actualizar política de salvaguarda de la organización", owner: null, status: "pending", global: true, priority: "high", due: 10 }),
   task({ title: "Capacitación de privacidad de datos para todo el personal", owner: null, status: "pending", global: true, due: 14 }),
+]
+
+tasks[10] = { ...tasks[10], source_type: "whatsapp", confidence: 0.62 }
+tasks[20] = { ...tasks[20], source_type: "meeting", confidence: 0.55 }
+
+export const meetings: Meeting[] = [
+  {
+    id: "meet_1",
+    organization_id: "org_1",
+    project_id: "proj_literacy",
+    title: "Reunión de planificación alfabetización",
+    summary: "Se acordó reclutar 4 docentes y abrir inscripciones en julio.",
+    created_at: dayOffset(-3),
+    linked_task_ids: ["task_11"],
+  },
+  {
+    id: "meet_2",
+    organization_id: "org_1",
+    project_id: "proj_mobile_clinic",
+    title: "Sync clínica móvil",
+    summary: "Prioridad: cadena de frío y rotación de junio.",
+    created_at: dayOffset(-8),
+    linked_task_ids: ["task_28", "task_29"],
+  },
+]
+
+export const reminders: Reminder[] = [
+  {
+    id: "rem_1",
+    task_id: "task_3",
+    task_title: "Firmar contrato con proveedor de clínica",
+    owner_label: "Elena Ruiz",
+    scheduled_at: dayOffset(-1),
+    sent_at: null,
+  },
+  {
+    id: "rem_2",
+    task_id: "task_18",
+    task_title: "Conciliar desembolsos de subvenciones",
+    owner_label: "Diego Torres",
+    scheduled_at: dayOffset(0),
+    sent_at: null,
+  },
+]
+
+export const inboundMessages: InboundMessage[] = [
+  {
+    id: "inb_1",
+    organization_id: "org_1",
+    sender_name: "María López",
+    body: "Necesitamos más raciones en la escuela del norte",
+    received_at: dayOffset(-2),
+  },
+  {
+    id: "inb_2",
+    organization_id: "org_1",
+    sender_name: "Carlos Pérez",
+    body: "Confirmo entrega de bombas de agua",
+    received_at: dayOffset(-1),
+  },
+  {
+    id: "inb_3",
+    organization_id: "org_1",
+    sender_name: "Ana Gómez",
+    body: "Tarea: revisar inventario de vacunas",
+    received_at: dayOffset(0),
+  },
 ]

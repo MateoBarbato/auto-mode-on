@@ -1,0 +1,10 @@
+---
+description: Prohibido editar schema/seeds/migrations en trabajo de frontend
+alwaysApply: true
+---
+
+# No tocar el schema en paralelo
+
+No editar `database/schema.sql`, `database/seeds.sql` ni `database/migrations/**` mientras se trabaja en UI, dashboard o features de frontend.
+
+El dashboard y el frontend **se adaptan al backend desplegado**, nunca al revés. Si falta un campo, escalar al equipo de backend — no parchear DDL en la misma tarea de UI.

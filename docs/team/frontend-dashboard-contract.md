@@ -23,12 +23,21 @@ extensiones, no como requisitos implícitos del MVP.
 
 ## Estado Actual
 
-La documentación de arquitectura dice que el dashboard objetivo vive en
-`apps/dashboard-web/**`, pero este checkout no incluye ese directorio. Por eso este
-documento es data-first: sirve para implementar el frontend en el repo donde exista la UI,
-o para reconstruir la UI contra Supabase sin acoplarse a mocks.
+**Implementación activa:** [`user-dashboard-design/`](../../user-dashboard-design/) (Next.js 16 + Supabase).
 
-El dashboard puede desarrollarse contra `database/seeds.sql` desde el día uno.
+| Fase | Estado | Notas |
+|---|---|---|
+| Fase 0 — contrato visual + mock | Completada | KPIs, histograma, distribución, listas operativas |
+| Fase 1 — lecturas Supabase live | Completada | `lib/supabase-queries.ts`, sesión, filtros, permisos |
+| Fase 1b — auth + usuarios | Completada | Login, `/settings/users`, invitaciones, `/invite/{token}` |
+| Fase 2 — RPC backend | Pendiente | Agregados siguen en cliente (`lib/aggregations.ts`) |
+| Fase 3 — métricas avanzadas | Bloqueada | Requiere `task_status_events` / `completed_at` |
+
+**Decisiones cerradas:**
+- Lecturas y escrituras vía Supabase desde Next.js (server actions + `service_role`).
+- Modo demo: `DEMO_ORG_SLUG` / `DEMO_USER_ID` cuando no hay Auth.
+- Rutas: `/` resumen, `/tasks/list`, `/people`, `/settings/users`, `/invite/{token}`.
+- Charts: barras CSS propias (sin librería externa).
 
 ## Principios
 
@@ -62,13 +71,30 @@ Leer `organization_settings.role_permissions` + `organization_memberships` para 
 
 | Campo | Uso UI |
 |---|---|
-| `dashboard_sections` / `dashboard_sections_override` | Navegación visible |
+| `dashboard_sections` / `dashboard_sections_override` | Navegación visible (`lib/nav.ts`) |
 | `tasks_scope` / `tasks_scope_override` | Alcance de datos: `all`, `team`, `assigned` |
+| `can_manage_users` | Acceso a `/settings/users` (CRUD membresías + invitaciones) |
+| `can_manage_settings` | Acceso a `/settings` |
 | `can_view_global_tasks` | Incluir globales en scopes restringidos |
 | `can_create_global_tasks` | Mostrar acción de crear tarea global |
 | `default_team_filter` | Filtro inicial |
 | `default_category_filter` | Filtro inicial |
 | `default_project_filter` | Filtro inicial |
+
+## Administración de usuarios (dashboard)
+
+Separado de `people` (contactos WhatsApp). Administra cuentas del panel.
+
+| Operación | Tablas | UI |
+|---|---|---|
+| Listar miembros | `organization_memberships` + `users` + M2M | `/settings/users` tab Miembros |
+| Invitar | `invitations`, `invitation_teams`, `invitation_categories` | Formulario + link `/invite/{token}` |
+| Editar membresía | `organization_memberships`, `membership_*` | Diálogo editar rol/equipos/estado |
+| Suspender | `organization_memberships.status = suspended` | Botón suspender (no delete físico) |
+| Aceptar invitación | `users`, `organization_memberships`, copy M2M | `/invite/{token}` + Supabase Auth |
+
+Escrituras: server actions en `user-dashboard-design/lib/actions/user-admin.ts` y `invite.ts`.
+Requiere `can_manage_users` + sección `users` en `dashboard_sections`.
 
 ## Filtros Compartidos
 
@@ -420,25 +446,17 @@ order by open_tasks desc, overdue_tasks desc;
 
 ## Planning por Fases
 
-### Fase 0: contrato visual con seeds
+### Fase 0: contrato visual con seeds — COMPLETADA
 
-Entregable frontend:
+- Layout con KPI rail, histograma, distribución, listas operativas, line charts actividad.
+- Mock en `user-dashboard-design/lib/mock-data.ts` con forma del contrato.
 
-- Layout de dashboard con cards KPI.
-- Placeholders de histogram, line chart, pie chart y tablas operativas.
-- Datos tomados de `seeds.sql` o mock generado con la misma forma del contrato.
+### Fase 1: Supabase live reads — COMPLETADA
 
-No requiere backend adicional.
-
-### Fase 1: Supabase live reads
-
-Entregable frontend:
-
-- Reemplazar mocks por queries a `tasks`, `projects`, `people`, `teams`, `categories`, `meetings`, `reminders`, `inbound_messages`.
-- Aplicar filtros compartidos a todos los widgets.
-- Resolver permisos desde `organization_settings` y `organization_memberships`.
-
-Requiere Supabase con `schema.sql` + `seeds.sql` desplegados.
+- Queries live en `lib/supabase-queries.ts`.
+- Filtros compartidos (`lib/filters.ts`), permisos (`lib/permissions.ts`), sesión (`lib/session.ts`).
+- Auth: `/login`, middleware, modo demo fallback.
+- Admin usuarios: `/settings/users`, invitaciones, `/invite/{token}`.
 
 ### Fase 2: agregados backend/RPC
 
@@ -472,8 +490,12 @@ Requiere cambios de schema:
 
 ## Preguntas Pendientes
 
-- ¿El frontend consumirá Supabase directo o un endpoint propio del backend?
-- ¿La autenticación ya entrega `organization_id`, `membership_id` y `user_id`, o el frontend debe resolverlos al iniciar sesión?
-- ¿El dashboard será una sola página o habrá rutas separadas para tareas, proyectos, reuniones y settings?
-- ¿Qué librería de charts va a usar el compañero frontend?
-- ¿Queremos modo demo hardcodeado por `fundacion-esperanza` mientras se termina auth?
+Todas resueltas para el MVP actual:
+
+| Pregunta | Decisión |
+|---|---|
+| ¿Supabase directo o API propia? | Supabase directo (Fase 2 RPC opcional después) |
+| ¿Auth entrega org/membership/user? | El frontend resuelve en `lib/session.ts` vía `auth_user_id` → `users` → `organization_memberships` |
+| ¿Una página o rutas separadas? | Rutas separadas (`/`, `/tasks/*`, `/people`, `/settings/*`) |
+| ¿Librería de charts? | Barras CSS en componentes propios |
+| ¿Modo demo? | `DEMO_ORG_SLUG` / `DEMO_USER_ID` hasta Auth completo |

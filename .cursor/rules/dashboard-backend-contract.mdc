@@ -1,0 +1,25 @@
+---
+description: Dashboard se acopla al backend; no editar schema en paralelo
+globs: user-dashboard-design/**/*
+alwaysApply: false
+---
+
+# Dashboard ↔ Backend (contrareloj)
+
+## No tocar el schema
+
+- **Nunca** editar `database/schema.sql`, `database/seeds.sql` ni `database/migrations/**` mientras trabajas en el dashboard u otro frontend.
+- Si falta un campo, KPI o relación: **adaptar el dashboard** a lo que existe hoy o escalar al equipo de backend/schema con un issue — no parchear el DDL en la misma rama de UI.
+- Las migraciones y el modelo de datos los define el backend; el dashboard solo **lee** lo desplegado.
+
+## El dashboard se acopla al backend, no al revés
+
+- Tipos, queries y agregaciones deben reflejar tablas y columnas **reales** del schema desplegado.
+- No inventar columnas en el frontend (ej. `avatar_url`) ni asumir mocks que el backend no tiene.
+- Permisos, scope y feature flags vienen de `organization_settings` y membresías — no hardcodear reglas que contradigan el backend.
+- Si el backend no expone un dato, el UI muestra iniciales/texto o oculta el widget; no se pide cambio de schema como parte del fix de UI.
+
+## Datos y auth
+
+- Lecturas server-side vía Supabase con las env vars del proyecto; sin `service_role` ni políticas RLS, escalar infra — no abrir el schema para “arreglar” permisos desde el frontend.
+- Modo demo (`DEMO_ORG_SLUG`, `DEMO_USER_ID`) solo hasta que exista auth; no sustituye contratos de API.

@@ -41,10 +41,10 @@ export function StatCard({
   }[accent ?? "default"]
 
   return (
-    <div className="rounded-xl border border-border bg-card p-4 sm:p-5">
-      <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{label}</p>
-      <p className={cn("mt-2 text-2xl font-semibold tabular-nums sm:text-3xl", accentColor)}>{value}</p>
-      {hint ? <p className="mt-1 text-xs text-muted-foreground">{hint}</p> : null}
+    <div className="rounded-lg border border-border bg-card px-4 py-3">
+      <p className="text-xs text-muted-foreground">{label}</p>
+      <p className={cn("mt-1 text-xl font-semibold tabular-nums", accentColor)}>{value}</p>
+      {hint ? <p className="mt-0.5 text-xs text-muted-foreground">{hint}</p> : null}
     </div>
   )
 }

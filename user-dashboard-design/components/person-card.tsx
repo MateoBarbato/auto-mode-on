@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
 import { initials, roleMeta } from "@/lib/ui-helpers"
@@ -16,7 +16,6 @@ export function PersonCard({ profile }: { profile: UserProfile }) {
     >
       <div className="flex items-center gap-3">
         <Avatar className="h-12 w-12">
-          <AvatarImage src={user.avatar_url ?? undefined} alt={user.display_name} />
           <AvatarFallback>{initials(user.display_name)}</AvatarFallback>
         </Avatar>
         <div className="min-w-0">

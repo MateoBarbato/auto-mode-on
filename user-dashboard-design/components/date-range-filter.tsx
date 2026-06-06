@@ -2,26 +2,21 @@
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { useCallback, useState } from "react"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { RANGE_PRESETS, type RangePreset } from "@/lib/date-ranges"
-import { CalendarRange } from "lucide-react"
+import { cn } from "@/lib/utils"
 
 export function DateRangeFilter({
   preset,
   from,
   to,
+  rangeLabel,
 }: {
   preset: RangePreset
   from?: string
   to?: string
+  rangeLabel?: string
 }) {
   const router = useRouter()
   const pathname = usePathname()
@@ -42,8 +37,7 @@ export function DateRangeFilter({
     [router, pathname, searchParams],
   )
 
-  const onPresetChange = (value: string | null) => {
-    const p = (value ?? "todo") as RangePreset
+  const onPresetChange = (p: RangePreset) => {
     if (p === "todo") {
       updateParams({ rango: undefined, desde: undefined, hasta: undefined })
     } else if (p === "personalizado") {
@@ -60,46 +54,60 @@ export function DateRangeFilter({
   }
 
   return (
-    <div className="flex flex-col items-stretch gap-2 sm:flex-row sm:items-center">
-      <div className="flex items-center gap-2">
-        <CalendarRange className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
-        <Select value={preset} onValueChange={onPresetChange}>
-          <SelectTrigger className="w-[180px]" aria-label="Filtrar por rango de fechas">
-            <SelectValue placeholder="Rango de fechas">
-              {(value: string | null) =>
-                RANGE_PRESETS.find((r) => r.value === value)?.label ?? "Rango de fechas"
-              }
-            </SelectValue>
-          </SelectTrigger>
-          <SelectContent>
-            {RANGE_PRESETS.map((r) => (
-              <SelectItem key={r.value} value={r.value}>
-                {r.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+    <div className="flex flex-col gap-3">
+      <div className="flex flex-wrap items-center gap-1.5">
+        {RANGE_PRESETS.map((r) => (
+          <Button
+            key={r.value}
+            type="button"
+            variant={preset === r.value ? "default" : "outline"}
+            size="sm"
+            className={cn(
+              "shrink-0",
+              preset === r.value && "shadow-sm",
+            )}
+            onClick={() => onPresetChange(r.value)}
+            aria-pressed={preset === r.value}
+          >
+            {r.label}
+          </Button>
+        ))}
       </div>
 
+      {rangeLabel ? (
+        <p className="text-xs text-muted-foreground">
+          Mostrando datos de <span className="font-medium text-foreground">{rangeLabel}</span>
+        </p>
+      ) : null}
+
       {preset === "personalizado" ? (
-        <div className="flex flex-wrap items-center gap-2">
-          <Input
-            type="date"
-            value={customFrom}
-            onChange={(e) => setCustomFrom(e.target.value)}
-            className="w-[150px]"
-            aria-label="Fecha desde"
-          />
-          <span className="text-sm text-muted-foreground">a</span>
-          <Input
-            type="date"
-            value={customTo}
-            onChange={(e) => setCustomTo(e.target.value)}
-            className="w-[150px]"
-            aria-label="Fecha hasta"
-          />
+        <div className="flex flex-wrap items-end gap-2 rounded-lg border border-border bg-muted/30 p-3">
+          <div className="flex flex-col gap-1">
+            <label htmlFor="filter-desde" className="text-xs text-muted-foreground">
+              Desde
+            </label>
+            <Input
+              id="filter-desde"
+              type="date"
+              value={customFrom}
+              onChange={(e) => setCustomFrom(e.target.value)}
+              className="w-[150px] bg-background"
+            />
+          </div>
+          <div className="flex flex-col gap-1">
+            <label htmlFor="filter-hasta" className="text-xs text-muted-foreground">
+              Hasta
+            </label>
+            <Input
+              id="filter-hasta"
+              type="date"
+              value={customTo}
+              onChange={(e) => setCustomTo(e.target.value)}
+              className="w-[150px] bg-background"
+            />
+          </div>
           <Button size="sm" onClick={applyCustom} disabled={!customFrom || !customTo}>
-            Aplicar
+            Aplicar rango
           </Button>
         </div>
       ) : null}
