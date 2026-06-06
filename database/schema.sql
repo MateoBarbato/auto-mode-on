@@ -1,6 +1,17 @@
 -- Halketon — PostgreSQL schema (Supabase-compatible)
 -- Multi-organization: one deployment serves many NGOs.
--- Run: psql $DATABASE_URL -f database/schema.sql
+--
+-- Fresh database:
+--   psql $DATABASE_URL -f database/schema.sql
+--   psql $DATABASE_URL -f database/seeds.sql
+--
+-- Re-apply after schema changes (destroys existing data):
+--   psql $DATABASE_URL -f database/reset.sql
+--   psql $DATABASE_URL -f database/schema.sql
+--   psql $DATABASE_URL -f database/seeds.sql
+--
+-- Partial update (e.g. only a fixed function): run just that CREATE OR REPLACE block.
+-- Do not re-run this whole file on a populated database — types/tables already exist.
 
 -- ---------------------------------------------------------------------------
 -- Extensions
@@ -214,6 +225,50 @@ create table organization_settings (
 
 create trigger organization_settings_set_updated_at
   before update on organization_settings
+  for each row execute function set_updated_at();
+
+-- ---------------------------------------------------------------------------
+-- Bootstrap: create default settings when an org is inserted
+-- ---------------------------------------------------------------------------
+
+create or replace function bootstrap_organization_settings()
+returns trigger
+language plpgsql
+as $$
+begin
+  insert into organization_settings (organization_id)
+  values (new.id)
+  on conflict (organization_id) do nothing;
+  return new;
+end;
+$$;
+
+create trigger organizations_bootstrap_settings
+  after insert on organizations
+  for each row execute function bootstrap_organization_settings();
+
+-- ---------------------------------------------------------------------------
+-- WhatsApp channels (one Twilio number per organization)
+-- Webhook To → organization_id. Primary org resolution on inbound messages.
+-- ---------------------------------------------------------------------------
+
+create table organization_channels (
+  id               uuid primary key default gen_random_uuid(),
+  organization_id  uuid not null references organizations (id) on delete cascade,
+  provider         text not null default 'twilio',
+  whatsapp_number  text not null,  -- E.164, Twilio WhatsApp "To" (e.g. whatsapp:+14155238886)
+  display_name     text,           -- label for menus / redirect messages
+  is_active        boolean not null default true,
+  created_at       timestamptz not null default now(),
+  updated_at       timestamptz not null default now(),
+
+  unique (whatsapp_number)
+);
+
+create index organization_channels_org_id_idx on organization_channels (organization_id);
+
+create trigger organization_channels_set_updated_at
+  before update on organization_channels
   for each row execute function set_updated_at();
 
 -- ---------------------------------------------------------------------------
@@ -720,50 +775,6 @@ create trigger proactive_outreach_set_updated_at
   for each row execute function set_updated_at();
 
 -- ---------------------------------------------------------------------------
--- Bootstrap: create default settings when an org is inserted
--- ---------------------------------------------------------------------------
-
-create or replace function bootstrap_organization_settings()
-returns trigger
-language plpgsql
-as $$
-begin
-  insert into organization_settings (organization_id)
-  values (new.id)
-  on conflict (organization_id) do nothing;
-  return new;
-end;
-$$;
-
-create trigger organizations_bootstrap_settings
-  after insert on organizations
-  for each row execute function bootstrap_organization_settings();
-
--- ---------------------------------------------------------------------------
--- WhatsApp channels (one Twilio number per organization)
--- Webhook To → organization_id. Primary org resolution on inbound messages.
--- ---------------------------------------------------------------------------
-
-create table organization_channels (
-  id               uuid primary key default gen_random_uuid(),
-  organization_id  uuid not null references organizations (id) on delete cascade,
-  provider         text not null default 'twilio',
-  whatsapp_number  text not null,  -- E.164, Twilio WhatsApp "To" (e.g. whatsapp:+14155238886)
-  display_name     text,           -- label for menus / redirect messages
-  is_active        boolean not null default true,
-  created_at       timestamptz not null default now(),
-  updated_at       timestamptz not null default now(),
-
-  unique (whatsapp_number)
-);
-
-create index organization_channels_org_id_idx on organization_channels (organization_id);
-
-create trigger organization_channels_set_updated_at
-  before update on organization_channels
-  for each row execute function set_updated_at();
-
--- ---------------------------------------------------------------------------
 -- Org consistency: scoped FKs must belong to the same organization
 -- ---------------------------------------------------------------------------
 
@@ -774,20 +785,27 @@ as $$
 declare
   fk_org uuid;
 begin
-  if tg_table_name in ('tasks', 'meetings', 'projects') then
+  if tg_table_name = 'projects' then
+    if new.team_id is not null then
+      select organization_id into fk_org from teams where id = new.team_id;
+      if fk_org is distinct from new.organization_id then
+        raise exception 'projects.team_id must belong to the same organization';
+      end if;
+    end if;
+  elsif tg_table_name in ('tasks', 'meetings') then
     if new.team_id is not null then
       select organization_id into fk_org from teams where id = new.team_id;
       if fk_org is distinct from new.organization_id then
         raise exception '%.team_id must belong to the same organization', tg_table_name;
       end if;
     end if;
-    if tg_table_name in ('tasks', 'meetings') and new.category_id is not null then
+    if new.category_id is not null then
       select organization_id into fk_org from categories where id = new.category_id;
       if fk_org is distinct from new.organization_id then
         raise exception '%.category_id must belong to the same organization', tg_table_name;
       end if;
     end if;
-    if tg_table_name in ('tasks', 'meetings') and new.project_id is not null then
+    if new.project_id is not null then
       select organization_id into fk_org from projects where id = new.project_id;
       if fk_org is distinct from new.organization_id then
         raise exception '%.project_id must belong to the same organization', tg_table_name;
