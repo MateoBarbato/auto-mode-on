@@ -1,0 +1,141 @@
+{
+  "name": "WhatsApp Task Capture — GPT-4o-mini extraction (no DB yet)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "whatsapp",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "c2d3e4f5-0001-4c1c-9d01-111111111111",
+      "name": "WhatsApp Inbound (Webhook)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300],
+      "webhookId": "c2d3e4f5-0001-4c1c-9d01-111111111111"
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $input.first().json.body;\nconst today = new Date().toISOString().split('T')[0];\n\nconst systemContent = 'You are a task extraction assistant for an NGO team. '\n  + 'Extract task commitments from WhatsApp messages and return ONLY strict JSON — no markdown, no prose outside the JSON object.\\n\\n'\n  + 'Rules:\\n'\n  + '- owner: person committing (use sender name for first-person, e.g. \"yo\" / \"me encargo\")\\n'\n  + '- task_title: concise title in the same language as the message\\n'\n  + '- due_date: resolve relative dates using today (' + today + '), return YYYY-MM-DD or null\\n'\n  + '- priority: low | normal | high | urgent (default normal; urgent = very imminent deadline)\\n'\n  + '- confidence: 0.0 to 1.0\\n\\n'\n  + 'Return exactly this JSON shape:\\n'\n  + '{\"intent\":\"task_creation\",\"owner\":\"...\",\"task_title\":\"...\",\"description\":null,\"due_date\":null,\"status\":\"pending\",\"priority\":\"normal\",\"confidence\":0.9}';\n\nreturn [{\n  json: {\n    model: 'gpt-4o-mini',\n    max_tokens: 512,\n    response_format: { type: 'json_object' },\n    messages: [\n      { role: 'system', content: systemContent },\n      { role: 'user', content: 'Sender: ' + body.ProfileName + '\\nMessage: ' + body.Body }\n    ]\n  }\n}];"
+      },
+      "id": "c2d3e4f5-0002-4c1c-9d01-222222222222",
+      "name": "Build OpenAI Request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/chat/completions",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.OPENAI_API_KEY }}"
+            },
+            {
+              "name": "content-type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ JSON.stringify($json) }}"
+      },
+      "id": "c2d3e4f5-0003-4c1c-9d01-333333333333",
+      "name": "Call GPT-4o-mini",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const raw = $input.first().json.choices[0].message.content;\nconst extracted = JSON.parse(raw);\nreturn [{ json: extracted }];"
+      },
+      "id": "c2d3e4f5-0004-4c1c-9d01-444444444444",
+      "name": "Parse LLM Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "=<Response><Message>={{ $json.confidence >= 0.6 ? 'Registré: ' + $json.task_title + ($json.due_date ? ' — ' + $json.due_date : '') + '. Confirmas?' : 'No entendí bien. ¿Me podés repetir qué hay que hacer y para cuándo?' }}</Message></Response>",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "text/xml"
+              }
+            ]
+          }
+        }
+      },
+      "id": "c2d3e4f5-0005-4c1c-9d01-555555555555",
+      "name": "Reply (TwiML)",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1120, 300]
+    }
+  ],
+  "connections": {
+    "WhatsApp Inbound (Webhook)": {
+      "main": [
+        [
+          {
+            "node": "Build OpenAI Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build OpenAI Request": {
+      "main": [
+        [
+          {
+            "node": "Call GPT-4o-mini",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call GPT-4o-mini": {
+      "main": [
+        [
+          {
+            "node": "Parse LLM Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse LLM Response": {
+      "main": [
+        [
+          {
+            "node": "Reply (TwiML)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {},
+  "meta": {},
+  "tags": []
+}
