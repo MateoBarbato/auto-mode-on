@@ -46,13 +46,19 @@ flowchart TD
 
 ### Decisions
 - [`decisions/0001-mvp-stack.md`](decisions/0001-mvp-stack.md) — ADR: why Twilio + n8n + Supabase + Next.js.
+- [`decisions/0002-multi-organization-schema.md`](decisions/0002-multi-organization-schema.md) — ADR: multi-org, roles, settings, invitations.
+- [`decisions/0003-teams-and-categories.md`](decisions/0003-teams-and-categories.md) — ADR: teams, categories, dashboard filters.
+- [`decisions/0004-projects-and-hierarchy.md`](decisions/0004-projects-and-hierarchy.md) — ADR: projects, role-gated creation.
+- [`decisions/0005-llm-project-disambiguation.md`](decisions/0005-llm-project-disambiguation.md) — ADR: LLM project vs standalone + user prompt.
+- [`decisions/0006-global-organization-tasks.md`](decisions/0006-global-organization-tasks.md) — ADR: org-wide global tasks.
+- [`decisions/0007-whatsapp-org-resolution.md`](decisions/0007-whatsapp-org-resolution.md) — ADR: Twilio number per org + people validation.
 
 ### Reference
 - [`reference/`](reference/) — source PDF (base architecture & product definition).
 
 ## Related artifacts (outside `docs/`)
 - [`../database/schema.sql`](../database/schema.sql) · [`../database/seeds.sql`](../database/seeds.sql) — Postgres schema & demo data.
-- [`../prompts/`](../prompts/) — strict-JSON extraction prompts.
+- [`../prompts/task-extraction.md`](../prompts/task-extraction.md) · [`../prompts/project-assignment-reply.md`](../prompts/project-assignment-reply.md) · [`../prompts/whatsapp-org-resolution.md`](../prompts/whatsapp-org-resolution.md) — extraction, project disambiguation, org resolution.
 - [`../apps/n8n-workflows/`](../apps/n8n-workflows/) — importable workflow definitions.
 - [`../apps/dashboard-web/`](../apps/dashboard-web/) — Next.js leadership dashboard.
 

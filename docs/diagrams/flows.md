@@ -28,6 +28,41 @@ flowchart LR
 
 ---
 
+## 1a. WhatsApp org resolution (canal + identidad)
+
+Before any task extraction, n8n resolves the org from the **Twilio `To` number** and
+validates the **sender `From`** exists in `people` for that org. See
+[`../../prompts/whatsapp-org-resolution.md`](../../prompts/whatsapp-org-resolution.md).
+
+```mermaid
+sequenceDiagram
+  autonumber
+  participant User
+  participant WhatsApp as Twilio (org-specific number)
+  participant n8n
+  participant DB as Supabase
+
+  User->>WhatsApp: message to Fundación Esperanza line
+  WhatsApp->>n8n: webhook From, To, Body
+  n8n->>DB: organization_channels WHERE whatsapp_number = To
+  DB-->>n8n: organization_id, channel_id
+  n8n->>DB: people WHERE org + From
+  alt Known in this org
+    DB-->>n8n: people row
+    n8n->>DB: upsert whatsapp_sessions → active
+    Note over n8n: continue to task extraction (§1 / §1b)
+  else Not in this org
+    n8n->>DB: lookup other orgs for same From
+    n8n->>WhatsApp: redirect menu or welcome / request access
+    WhatsApp-->>User: menu (0, 1, G… or org list)
+  end
+```
+
+**Dual layer:** `To` → org · `From` + org → authorized person. Same phone in two orgs
+uses two different Twilio numbers (no collision).
+
+---
+
 ## 1. WhatsApp task creation
 
 ```mermaid
@@ -53,6 +88,55 @@ sequenceDiagram
   Dashboard->>DB: query task state
   DB-->>Dashboard: open / overdue / load by owner
 ```
+
+---
+
+## 1b. WhatsApp task creation with project disambiguation
+
+When the LLM cannot confidently match a project, it asks the user before inserting the task.
+See [`../../prompts/task-extraction.md`](../../prompts/task-extraction.md) and
+[`../../prompts/project-assignment-reply.md`](../../prompts/project-assignment-reply.md).
+
+```mermaid
+sequenceDiagram
+  autonumber
+  participant User
+  participant WhatsApp as Twilio WhatsApp
+  participant n8n
+  participant LLM
+  participant DB as Supabase
+
+  User->>WhatsApp: "Mañana coordino el espacio del taller"
+  WhatsApp->>n8n: POST webhook
+  n8n->>DB: insert inbound_messages
+  n8n->>DB: fetch active_projects (planning, active)
+  DB-->>n8n: project list
+  n8n->>LLM: task-extraction (message + active_projects)
+  LLM-->>n8n: JSON project_resolution.status = needs_clarification
+  n8n->>DB: insert task_drafts (extraction_payload, offered_projects)
+  n8n->>WhatsApp: "Registré: … ¿Individual (0) o proyecto? 1—… 2—…"
+  WhatsApp-->>User: disambiguation prompt
+
+  User->>WhatsApp: "2"
+  WhatsApp->>n8n: POST webhook (reply)
+  n8n->>DB: fetch task_drafts by sender_phone (pending)
+  DB-->>n8n: draft
+  n8n->>LLM: project-assignment-reply (reply + draft + offered_projects)
+  LLM-->>n8n: JSON project_id confirmed
+  n8n->>DB: insert tasks (project_id or null)
+  n8n->>DB: update task_drafts → confirmed, resolved_task_id
+  n8n->>WhatsApp: "Listo: … dentro de Taller nutrición. ¿Algo más?"
+  WhatsApp-->>User: confirmation
+```
+
+**Fast paths (no second turn):**
+
+| `project_resolution.status` | Action |
+|---|---|
+| `matched` | Insert task with `project_id` immediately |
+| `standalone` | Insert task individual (`is_global = false`, no project) |
+| `is_global: true` | Insert global task (skip project flow) |
+| `needs_clarification` | Draft + list: `0` individual, `G` global, numbered projects |
 
 ---
 
