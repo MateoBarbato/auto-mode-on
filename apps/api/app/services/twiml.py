@@ -14,5 +14,9 @@ def clarification_reply() -> str:
     return twiml_message("No entendi bien. Me podes repetir que hay que hacer y para cuando?")
 
 
+def unregistered_sender_reply() -> str:
+    return twiml_message("No te tengo registrado para esta organizacion. Pedi acceso a coordinacion.")
+
+
 def twiml_message(body: str) -> str:
     return f"<Response><Message>{escape(body)}</Message></Response>"
