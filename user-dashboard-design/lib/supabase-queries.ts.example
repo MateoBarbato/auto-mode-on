@@ -1,0 +1,71 @@
+// ---------------------------------------------------------------------------
+// EXAMPLE: How to wire the dashboard to live Supabase data.
+//
+// This file is intentionally NOT imported anywhere. It documents the queries
+// that lib/data.ts should run when DATA_SOURCE=supabase.
+//
+// To enable:
+//   1. Add the Supabase integration (sets NEXT_PUBLIC_SUPABASE_URL + keys).
+//   2. Run the provided schema in your Supabase project.
+//   3. Install @supabase/supabase-js and @supabase/ssr.
+//   4. Rename this file to lib/supabase-queries.ts and import it from data.ts,
+//      replacing the `throw` branches guarded by USE_SUPABASE.
+//   5. Set DATA_SOURCE=supabase in your environment variables.
+// ---------------------------------------------------------------------------
+
+/*
+import { createServerClient } from "@supabase/ssr"
+import { cookies } from "next/headers"
+import type { OrgOverview, UserProfile } from "@/lib/types"
+
+async function getClient() {
+  const cookieStore = await cookies()
+  return createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll: () => cookieStore.getAll(),
+        setAll: () => {},
+      },
+    },
+  )
+}
+
+// Resolve the current organization (e.g. from the signed-in user's membership).
+async function getCurrentOrgId(): Promise<string> {
+  // const supabase = await getClient()
+  // const { data } = await supabase.from("organization_memberships").select("organization_id").limit(1).single()
+  // return data!.organization_id
+  return ""
+}
+
+export async function getOrgOverviewFromSupabase(): Promise<OrgOverview> {
+  const supabase = await getClient()
+  const orgId = await getCurrentOrgId()
+
+  const [{ data: org }, { data: teams }, { data: categories }, { data: projects }, { data: tasks }, { count: memberCount }] =
+    await Promise.all([
+      supabase.from("organizations").select("*").eq("id", orgId).single(),
+      supabase.from("teams").select("*").eq("organization_id", orgId),
+      supabase.from("categories").select("*").eq("organization_id", orgId),
+      supabase.from("projects").select("*").eq("organization_id", orgId),
+      supabase.from("tasks").select("*").eq("organization_id", orgId),
+      supabase.from("organization_memberships").select("*", { count: "exact", head: true }).eq("organization_id", orgId).eq("status", "active"),
+    ])
+
+  // ...then aggregate exactly like getOrgOverviewMock() in lib/data.ts.
+  throw new Error("Implement aggregation")
+}
+
+export async function getPeopleFromSupabase(): Promise<UserProfile[]> {
+  // Join organization_memberships -> users, membership_teams, membership_categories,
+  // and tasks (owner_id) to build each UserProfile, mirroring buildProfile().
+  throw new Error("Implement query")
+}
+
+export async function getUserProfileFromSupabase(userId: string): Promise<UserProfile | null> {
+  // Same joins as getPeopleFromSupabase but filtered to a single user_id.
+  throw new Error("Implement query")
+}
+*/
