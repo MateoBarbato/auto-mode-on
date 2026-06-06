@@ -1,6 +1,6 @@
 import pytest
 
-from app.services.whatsapp_messages import UnsupportedMessageError, normalize_twilio_message
+from app.services.whatsapp_transcription import UnsupportedMessageError, normalize_twilio_message
 
 
 class Settings:
@@ -24,7 +24,7 @@ async def test_audio_payload_transcribes(monkeypatch):
         return "Transcripcion lista"
 
     monkeypatch.setattr(
-        "app.services.whatsapp_messages.transcribe_twilio_audio",
+        "app.services.whatsapp_transcription.whatsapp_transcription.transcribe_twilio_audio",
         fake_transcribe,
     )
 

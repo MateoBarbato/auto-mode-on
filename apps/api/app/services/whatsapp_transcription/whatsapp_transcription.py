@@ -1,4 +1,4 @@
-"""Twilio media download and OpenAI audio transcription."""
+"""Normalize WhatsApp text/audio payloads and transcribe Twilio media."""
 
 import asyncio
 import subprocess
@@ -12,8 +12,45 @@ from openai import OpenAI
 from app.config import Settings
 
 
+class UnsupportedMessageError(RuntimeError):
+    """Raised when a Twilio payload cannot be turned into text."""
+
+
 class TranscriptionError(RuntimeError):
     """Raised when media cannot be downloaded, converted, or transcribed."""
+
+
+async def normalize_twilio_message(form: dict[str, str], settings: Settings) -> str:
+    body = (form.get("Body") or "").strip()
+    media_count = _parse_int(form.get("NumMedia"))
+    media_url = form.get("MediaUrl0") or ""
+    media_content_type = form.get("MediaContentType0") or ""
+
+    if media_count > 0:
+        if media_url and media_content_type.startswith("audio/"):
+            return await transcribe_twilio_audio(media_url, media_content_type, settings)
+        raise UnsupportedMessageError("Only audio media is supported")
+
+    if body:
+        return body
+
+    raise UnsupportedMessageError("Message has no text or supported audio media")
+
+
+async def transcribe_twilio_audio(
+    media_url: str,
+    content_type: str,
+    settings: Settings,
+) -> str:
+    audio_bytes = await download_twilio_media(media_url, settings)
+    mp3_bytes = await asyncio.to_thread(convert_audio_to_mp3, audio_bytes, content_type)
+    transcript = await asyncio.to_thread(_transcribe_mp3, mp3_bytes, settings)
+    transcript = transcript.strip()
+
+    if not transcript:
+        raise TranscriptionError("Transcription returned empty text")
+
+    return transcript
 
 
 async def download_twilio_media(media_url: str, settings: Settings) -> bytes:
@@ -60,22 +97,6 @@ def convert_audio_to_mp3(audio_bytes: bytes, content_type: str) -> bytes:
         return output_path.read_bytes()
 
 
-async def transcribe_twilio_audio(
-    media_url: str,
-    content_type: str,
-    settings: Settings,
-) -> str:
-    audio_bytes = await download_twilio_media(media_url, settings)
-    mp3_bytes = await asyncio.to_thread(convert_audio_to_mp3, audio_bytes, content_type)
-    transcript = await asyncio.to_thread(_transcribe_mp3, mp3_bytes, settings)
-    transcript = transcript.strip()
-
-    if not transcript:
-        raise TranscriptionError("Transcription returned empty text")
-
-    return transcript
-
-
 def _transcribe_mp3(mp3_bytes: bytes, settings: Settings) -> str:
     if not settings.openai_api_key:
         raise TranscriptionError("OPENAI_API_KEY is required for transcription")
@@ -107,3 +128,10 @@ def _suffix_for_content_type(content_type: str) -> str:
         "audio/wave": ".wav",
         "audio/webm": ".webm",
     }.get(normalized, ".audio")
+
+
+def _parse_int(value: str | None) -> int:
+    try:
+        return int(value or "0")
+    except ValueError:
+        return 0
